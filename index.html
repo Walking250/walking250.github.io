@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RunSurface Demo - Fixed Version</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2rem;
+        }
+        .header p {
+            margin: 0.5rem 0 0;
+            opacity: 0.9;
+        }
+        .status-bar {
+            background: white;
+            padding: 1rem;
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        .status-success { background: #27ae60; }
+        .status-error { background: #e74c3c; }
+        .status-warning { background: #f39c12; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .main-content {
+            display: flex;
+            height: calc(100vh - 170px);
+        }
+        .map-container {
+            flex: 1;
+            position: relative;
+        }
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+        .sidebar {
+            width: 400px;
+            background: white;
+            border-left: 1px solid #dee2e6;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+        .control-group {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .control-group h3 {
+            margin: 0 0 1rem 0;
+            color: #2c3e50;
+            font-size: 1.1rem;
+        }
+        .input-group {
+            margin-bottom: 0.75rem;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 0.25rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #495057;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        .btn {
+            width: 100%;
+            padding: 0.75rem;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        .btn:hover:not(:disabled) {
+            background: #2980b9;
+        }
+        .btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background: #95a5a6;
+        }
+        .btn-secondary:hover:not(:disabled) {
+            background: #7f8c8d;
+        }
+        .btn-active {
+            background: #27ae60 !important;
+            box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.3);
+            animation: pulse-border 2s infinite;
+        }
+        @keyframes pulse-border {
+            0%, 100% { box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.3); }
+            50% { box-shadow: 0 0 0 6px rgba(39, 174, 96, 0.1); }
+        }
+        .info-panel {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+        }
+        .info-panel h4 {
+            margin: 0 0 0.75rem 0;
+            color: #2c3e50;
+            font-size: 1rem;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f1f3f5;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            font-weight: 500;
+            color: #6c757d;
+        }
+        .info-value {
+            color: #2c3e50;
+        }
+        .alert {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        .alert-info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .alert-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+        }
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #6c757d;
+        }
+        .demo-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: #f39c12;
+            color: white;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+        .surface-segment {
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            background: #f8f9fa;
+            border-left: 4px solid #3498db;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        .surface-segment-header {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #2c3e50;
+        }
+        .surface-detail {
+            display: flex;
+            justify-content: space-between;
+            margin: 0.25rem 0;
+            color: #6c757d;
+        }
+        .quality-excellent { border-left-color: #27ae60; }
+        .quality-good { border-left-color: #3498db; }
+        .quality-fair { border-left-color: #f39c12; }
+        .quality-poor { border-left-color: #e74c3c; }
+        .route-summary {
+            background: #e8f4f8;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+        .summary-stat {
+            display: flex;
+            justify-content: space-between;
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+        }
+        .summary-stat strong {
+            color: #2c3e50;
+        }
+        .progress-bar {
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #27ae60, #f39c12, #e74c3c);
+            transition: width 0.3s;
+        }
+        .route-legend {
+            position: absolute;
+            bottom: 30px;
+            left: 10px;
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            font-size: 0.85rem;
+            z-index: 1000;
+        }
+        .demo-notice {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 243, 205, 0.95);
+            border: 1px solid #ffeeba;
+            color: #856404;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            z-index: 1000;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        .demo-notice strong {
+            font-weight: 600;
+        }
+        .legend-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #2c3e50;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 0.25rem 0;
+        }
+        .legend-line {
+            width: 30px;
+            height: 4px;
+            margin-right: 0.5rem;
+            border-radius: 2px;
+        }
+        .legend-gradient {
+            width: 100%;
+            height: 10px;
+            border-radius: 3px;
+            margin: 0.5rem 0;
+        }
+        .legend-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏃 Surface Condition Analysis <span class="demo-badge">DEMO MODE</span></h1>
+        <p>Surface Condition Analysis for Runners/Walkers</p>
+    </div>
+
+    <div class="status-bar">
+        <div class="status-item">
+            <div class="status-dot" id="maps-dot"></div>
+            <span id="maps-status">Google Maps: Loading...</span>
+        </div>
+        <div class="status-item">
+            <div class="status-dot status-warning"></div>
+            <span>Backend API: Demo Mode (Mock Data)</span>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="map-container">
+            <div id="map"></div>
+            <div class="demo-notice">
+                <strong>ℹ️ Demo Mode:</strong> Using simulated data. We will connect Apps to real time data in the future.
+            </div>
+            <div id="route-legend" class="route-legend" style="display: none;">
+                <div class="legend-title">🎨 Route Surface Conditions</div>
+                <div style="margin-bottom: 0.75rem;">
+                    <div style="font-weight: 500; margin-bottom: 0.25rem;">Hardness (Top Line)</div>
+                    <div class="legend-gradient" style="background: linear-gradient(90deg, #27ae60, #f1c40f, #e67e22, #e74c3c);"></div>
+                    <div class="legend-labels">
+                        <span>Soft (0)</span>
+                        <span>Medium (20)</span>
+                        <span>Hard (40)</span>
+                    </div>
+                </div>
+                <div>
+                    <div style="font-weight: 500; margin-bottom: 0.25rem;">Slipperiness (Bottom Line)</div>
+                    <div class="legend-gradient" style="background: linear-gradient(90deg, #27ae60, #3498db, #9b59b6, #e74c3c);"></div>
+                    <div class="legend-labels">
+                        <span>Low (0%)</span>
+                        <span>Medium (50%)</span>
+                        <span>High (100%)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="control-group">
+                <h3>🗺️ Route Planning</h3>
+                <div class="alert alert-info" style="margin-bottom: 1rem; padding: 0.75rem; font-size: 0.85rem;">
+                    <strong>💡 Tip:</strong> Click buttons below to mark start/end points on the map!
+                </div>
+                <button class="btn btn-secondary" id="set-start-btn" onclick="setClickMode('start')" style="margin-bottom: 0.5rem;">
+                    📍 Click Map to Set Start Point
+                </button>
+                <button class="btn btn-secondary" id="set-end-btn" onclick="setClickMode('end')" style="margin-bottom: 1rem;">
+                    🎯 Click Map to Set End Point
+                </button>
+                <div class="input-group">
+                    <label>From <span id="start-coords" style="font-size: 0.75rem; color: #27ae60;"></span></label>
+                    <input type="text" id="origin" placeholder="Start location or click map" readonly>
+                </div>
+                <div class="input-group">
+                    <label>To <span id="end-coords" style="font-size: 0.75rem; color: #e74c3c;"></span></label>
+                    <input type="text" id="destination" placeholder="End location or click map" readonly>
+                </div>
+                <button class="btn" id="route-btn" onclick="planRoute()">Plan Route</button>
+                <button class="btn btn-secondary" onclick="clearRoute()" style="margin-top: 0.5rem;">Clear Route</button>
+            </div>
+
+            <div id="surface-info" class="info-panel" style="display: none;">
+                <h4>🔬 Surface Analysis</h4>
+                <div class="info-row">
+                    <span class="info-label">Material:</span>
+                    <span class="info-value" id="material">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Hardness:</span>
+                    <span class="info-value" id="hardness">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Slipperiness:</span>
+                    <span class="info-value" id="slipperiness">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Quality:</span>
+                    <span class="info-value" id="quality">-</span>
+                </div>
+            </div>
+
+            <div id="route-info" class="info-panel" style="display: none;">
+                <h4>🚶 Route Details</h4>
+                <div class="info-row">
+                    <span class="info-label">Distance:</span>
+                    <span class="info-value" id="distance">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Duration:</span>
+                    <span class="info-value" id="duration">-</span>
+                </div>
+                <div id="steps-container"></div>
+            </div>
+
+            <div id="route-surface-analysis" class="info-panel" style="display: none;">
+                <h4>🔬 Route Surface Analysis</h4>
+                <div class="route-summary">
+                    <div class="summary-stat">
+                        <span>Avg. Hardness:</span>
+                        <strong id="avg-hardness">-</strong>
+                    </div>
+                    <div class="summary-stat">
+                        <span>Avg. Slipperiness:</span>
+                        <strong id="avg-slipperiness">-</strong>
+                    </div>
+                    <div class="summary-stat">
+                        <span>Primary Surface:</span>
+                        <strong id="primary-surface">-</strong>
+                    </div>
+                    <div class="summary-stat">
+                        <span>Air Quality Index:</span>
+                        <strong id="air-quality">-</strong>
+                    </div>
+                    <div class="summary-stat">
+                        <span>Overall Quality:</span>
+                        <strong id="overall-quality">-</strong>
+                    </div>
+                </div>
+                <h4 style="margin-top: 1rem; font-size: 0.95rem;">Route Segments:</h4>
+                <div id="surface-segments"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let map;
+        let directionsService;
+        let directionsRenderer;
+        let marker;
+        let startMarker;
+        let endMarker;
+        let isMapReady = false;
+        let clickMode = null; // 'start', 'end', or null
+        let startLocation = null;
+        let endLocation = null;
+
+        // Demo surface materials
+        const SURFACE_MATERIALS = ['asphalt', 'concrete', 'dirt', 'grass', 'gravel', 'brick'];
+
+        // Weighted material selection based on visual road properties
+        // Grey/paved roads (asphalt, concrete) are hard and common on walking routes
+        // Green areas (grass, dirt) are soft and less common
+        function getWeightedMaterial() {
+            const random = Math.random() * 100;
+
+            // Weighted probabilities based on typical walking route surfaces
+            if (random < 45) return 'asphalt';      // 45% - Grey paved roads (hard)
+            if (random < 80) return 'concrete';     // 35% - Grey/white sidewalks (hard)
+            if (random < 90) return 'brick';        // 10% - Reddish brick paths (medium-hard)
+            if (random < 95) return 'gravel';       //  5% - Brown/grey gravel (medium-soft)
+            if (random < 98) return 'dirt';         //  3% - Brown dirt trails (soft)
+            return 'grass';                         //  2% - Green grass/parks (soft)
+        }
+
+        function getRandomSurfaceData() {
+            const material = getWeightedMaterial();
+
+            // Realistic hardness and slipperiness values based on material type
+            let hardness, slipperiness;
+
+            switch(material) {
+                case 'asphalt':
+                    hardness = 20 + Math.random() * 5;  // 20-25 m/s²
+                    slipperiness = 0.2 + Math.random() * 0.15;  // 0.2-0.35
+                    break;
+                case 'concrete':
+                    hardness = 28 + Math.random() * 7;  // 28-35 m/s²
+                    slipperiness = 0.15 + Math.random() * 0.15;  // 0.15-0.30
+                    break;
+                case 'dirt':
+                    hardness = 8 + Math.random() * 7;  // 8-15 m/s²
+                    slipperiness = 0.35 + Math.random() * 0.2;  // 0.35-0.55
+                    break;
+                case 'grass':
+                    hardness = 5 + Math.random() * 7;  // 5-12 m/s²
+                    slipperiness = 0.40 + Math.random() * 0.2;  // 0.40-0.60
+                    break;
+                case 'gravel':
+                    hardness = 12 + Math.random() * 8;  // 12-20 m/s²
+                    slipperiness = 0.45 + Math.random() * 0.2;  // 0.45-0.65
+                    break;
+                case 'brick':
+                    hardness = 22 + Math.random() * 8;  // 22-30 m/s²
+                    slipperiness = 0.25 + Math.random() * 0.15;  // 0.25-0.40
+                    break;
+                default:
+                    hardness = Math.random() * 40;
+                    slipperiness = Math.random();
+            }
+
+            // Determine quality based on hardness and slipperiness
+            let quality = 'Good';
+            if (hardness > 30 || slipperiness > 0.5) quality = 'Fair';
+            if (hardness > 35 || slipperiness > 0.7) quality = 'Poor';
+            if (hardness < 15 && slipperiness < 0.35) quality = 'Excellent';
+
+            return { material, hardness, slipperiness, quality };
+        }
+
+        function getAirQualityIndex() {
+            // Generate random AQI between 0-500 with bias towards moderate values
+            const aqi = Math.floor(Math.random() * 150) + 10; // 10-160 range
+
+            let category = 'Good';
+            let color = '#27ae60';
+
+            if (aqi <= 50) {
+                category = 'Good';
+                color = '#27ae60';
+            } else if (aqi <= 100) {
+                category = 'Moderate';
+                color = '#f1c40f';
+            } else if (aqi <= 150) {
+                category = 'Unhealthy for Sensitive';
+                color = '#e67e22';
+            } else if (aqi <= 200) {
+                category = 'Unhealthy';
+                color = '#e74c3c';
+            } else if (aqi <= 300) {
+                category = 'Very Unhealthy';
+                color = '#8e44ad';
+            } else {
+                category = 'Hazardous';
+                color = '#7f1d1d';
+            }
+
+            return { value: aqi, category, color };
+        }
+
+        function initMap() {
+            console.log('Initializing Google Maps...');
+
+            try {
+                map = new google.maps.Map(document.getElementById('map'), {
+                    center: { lat: 37.7749, lng: -122.4194 },
+                    zoom: 14,
+                    mapTypeControl: true,
+                    streetViewControl: true,
+                    fullscreenControl: true
+                });
+
+                directionsService = new google.maps.DirectionsService();
+                directionsRenderer = new google.maps.DirectionsRenderer({
+                    suppressMarkers: false,  // Show default markers
+                    polylineOptions: {
+                        strokeColor: '#3498db',
+                        strokeWeight: 5,
+                        strokeOpacity: 0.7
+                    }
+                });
+                directionsRenderer.setMap(map);
+
+                map.addListener('click', function(event) {
+                    onMapClick(event.latLng);
+                });
+
+                isMapReady = true;
+                updateStatus('success', 'Google Maps: Loaded ✅');
+                console.log('Google Maps initialized successfully');
+
+            } catch (error) {
+                console.error('Error initializing map:', error);
+                updateStatus('error', 'Google Maps: Error ❌');
+            }
+        }
+
+        function updateStatus(type, text) {
+            const dot = document.getElementById('maps-dot');
+            const status = document.getElementById('maps-status');
+
+            dot.className = 'status-dot status-' + type;
+            status.textContent = text;
+        }
+
+        function setClickMode(mode) {
+            clickMode = mode;
+
+            // Update button styles
+            document.getElementById('set-start-btn').classList.remove('btn-active');
+            document.getElementById('set-end-btn').classList.remove('btn-active');
+
+            if (mode === 'start') {
+                document.getElementById('set-start-btn').classList.add('btn-active');
+                map.setOptions({ draggableCursor: 'crosshair' });
+            } else if (mode === 'end') {
+                document.getElementById('set-end-btn').classList.add('btn-active');
+                map.setOptions({ draggableCursor: 'crosshair' });
+            }
+        }
+
+        function onMapClick(location) {
+            if (!isMapReady) {
+                alert('Google Maps not loaded yet. Please wait and try again.');
+                return;
+            }
+
+            // If in click mode to set start/end points
+            if (clickMode === 'start') {
+                setStartPoint(location);
+                return;
+            } else if (clickMode === 'end') {
+                setEndPoint(location);
+                return;
+            }
+
+            // Normal click behavior - show surface analysis
+            if (marker) marker.setMap(null);
+
+            marker = new google.maps.Marker({
+                position: location,
+                map: map,
+                title: 'Analysis Point'
+            });
+
+            const data = getRandomSurfaceData();
+            showSurfaceData(data);
+        }
+
+        function setStartPoint(location) {
+            startLocation = location;
+
+            // Remove old start marker
+            if (startMarker) startMarker.setMap(null);
+
+            // Create new start marker
+            startMarker = new google.maps.Marker({
+                position: location,
+                map: map,
+                label: {
+                    text: 'A',
+                    color: 'white',
+                    fontWeight: 'bold'
+                },
+                title: 'Start Point',
+                icon: {
+                    url: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
+                    scaledSize: new google.maps.Size(40, 40)
+                },
+                animation: google.maps.Animation.DROP
+            });
+
+            // Update UI
+            const coords = `(${location.lat().toFixed(5)}, ${location.lng().toFixed(5)})`;
+            document.getElementById('origin').value = coords;
+            document.getElementById('start-coords').textContent = '✓ Set';
+
+            // Reset click mode
+            clickMode = null;
+            document.getElementById('set-start-btn').classList.remove('btn-active');
+            map.setOptions({ draggableCursor: null });
+
+            // Auto-activate end point mode if not set
+            if (!endLocation) {
+                setTimeout(() => setClickMode('end'), 500);
+            }
+        }
+
+        function setEndPoint(location) {
+            endLocation = location;
+
+            // Remove old end marker
+            if (endMarker) endMarker.setMap(null);
+
+            // Create new end marker
+            endMarker = new google.maps.Marker({
+                position: location,
+                map: map,
+                label: {
+                    text: 'B',
+                    color: 'white',
+                    fontWeight: 'bold'
+                },
+                title: 'End Point',
+                icon: {
+                    url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                    scaledSize: new google.maps.Size(40, 40)
+                },
+                animation: google.maps.Animation.DROP
+            });
+
+            // Update UI
+            const coords = `(${location.lat().toFixed(5)}, ${location.lng().toFixed(5)})`;
+            document.getElementById('destination').value = coords;
+            document.getElementById('end-coords').textContent = '✓ Set';
+
+            // Reset click mode
+            clickMode = null;
+            document.getElementById('set-end-btn').classList.remove('btn-active');
+            map.setOptions({ draggableCursor: null });
+
+            // Automatically plan the route if both start and end are set
+            if (startLocation && endLocation) {
+                setTimeout(() => {
+                    planRoute();
+                }, 300); // Small delay for better UX
+            }
+        }
+
+        function clearRoute() {
+            // Clear markers
+            if (startMarker) startMarker.setMap(null);
+            if (endMarker) endMarker.setMap(null);
+            if (directionsRenderer) {
+                directionsRenderer.setDirections({ routes: [] });
+                directionsRenderer.setOptions({
+                    suppressPolylines: false,
+                    suppressMarkers: false
+                });
+            }
+            if (currentRoutePath) currentRoutePath.setMap(null);
+            routeMarkers.forEach(marker => marker.setMap(null));
+            hardnessPolylines.forEach(poly => poly.setMap(null));
+            slipperyPolylines.forEach(poly => poly.setMap(null));
+            routeLabels.forEach(label => label.setMap(null));
+
+            // Clear data
+            startLocation = null;
+            endLocation = null;
+            startMarker = null;
+            endMarker = null;
+            currentRoutePath = null;
+            routeMarkers = [];
+            hardnessPolylines = [];
+            slipperyPolylines = [];
+            routeLabels = [];
+
+            // Clear UI
+            document.getElementById('origin').value = '';
+            document.getElementById('destination').value = '';
+            document.getElementById('start-coords').textContent = '';
+            document.getElementById('end-coords').textContent = '';
+            document.getElementById('route-info').style.display = 'none';
+            document.getElementById('route-surface-analysis').style.display = 'none';
+            document.getElementById('route-legend').style.display = 'none';
+
+            // Reset click mode
+            clickMode = null;
+            document.getElementById('set-start-btn').classList.remove('btn-active');
+            document.getElementById('set-end-btn').classList.remove('btn-active');
+            map.setOptions({ draggableCursor: null });
+        }
+
+        function showSurfaceData(data) {
+            document.getElementById('surface-info').style.display = 'block';
+            document.getElementById('material').textContent = data.material.charAt(0).toUpperCase() + data.material.slice(1);
+            document.getElementById('hardness').textContent = data.hardness.toFixed(1) + ' m/s²';
+            document.getElementById('slipperiness').textContent = (data.slipperiness * 100).toFixed(0) + '%';
+            document.getElementById('quality').textContent = data.quality;
+        }
+
+        function searchLocation() {
+            if (!isMapReady) {
+                alert('Google Maps not loaded yet. Please wait and try again.');
+                return;
+            }
+
+            const input = document.getElementById('search-input').value;
+            if (!input) return;
+
+            const geocoder = new google.maps.Geocoder();
+            geocoder.geocode({ address: input }, function(results, status) {
+                if (status === 'OK') {
+                    map.setCenter(results[0].geometry.location);
+                    map.setZoom(15);
+
+                    if (marker) marker.setMap(null);
+                    marker = new google.maps.Marker({
+                        map: map,
+                        position: results[0].geometry.location
+                    });
+                } else {
+                    alert('Location not found: ' + status);
+                }
+            });
+        }
+
+        function useCurrentLocation() {
+            if (!isMapReady) {
+                alert('Google Maps not loaded yet. Please wait and try again.');
+                return;
+            }
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        const pos = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        map.setCenter(pos);
+                        map.setZoom(15);
+
+                        if (marker) marker.setMap(null);
+                        marker = new google.maps.Marker({
+                            map: map,
+                            position: pos
+                        });
+                    },
+                    function() {
+                        alert('Error: The Geolocation service failed.');
+                    }
+                );
+            } else {
+                alert('Error: Your browser doesn\'t support geolocation.');
+            }
+        }
+
+        function analyzeRouteSurfaces(route) {
+            const steps = route.steps;
+            const segments = [];
+
+            // Analyze each step of the route
+            steps.forEach((step, index) => {
+                const surfaceData = getRandomSurfaceData();
+                segments.push({
+                    step: index + 1,
+                    distance: step.distance.text,
+                    distanceValue: step.distance.value,
+                    instructions: step.instructions.replace(/<[^>]*>/g, ''), // Remove HTML tags
+                    hardness: surfaceData.hardness,
+                    slipperiness: surfaceData.slipperiness,
+                    material: surfaceData.material,
+                    quality: surfaceData.quality
+                });
+            });
+
+            // Calculate aggregate statistics
+            const totalDistance = segments.reduce((sum, seg) => sum + seg.distanceValue, 0);
+            const avgHardness = segments.reduce((sum, seg) => sum + seg.hardness, 0) / segments.length;
+            const avgSlipperiness = segments.reduce((sum, seg) => sum + seg.slipperiness, 0) / segments.length;
+
+            // Find most common surface material
+            const materialCounts = {};
+            segments.forEach(seg => {
+                materialCounts[seg.material] = (materialCounts[seg.material] || 0) + seg.distanceValue;
+            });
+            const primaryMaterial = Object.keys(materialCounts).reduce((a, b) =>
+                materialCounts[a] > materialCounts[b] ? a : b
+            );
+
+            // Calculate overall quality
+            let overallQuality = 'Good';
+            if (avgHardness > 30 || avgSlipperiness > 0.5) overallQuality = 'Fair';
+            if (avgHardness > 35 || avgSlipperiness > 0.7) overallQuality = 'Poor';
+            if (avgHardness < 20 && avgSlipperiness < 0.3) overallQuality = 'Excellent';
+
+            return {
+                segments,
+                avgHardness,
+                avgSlipperiness,
+                primaryMaterial,
+                overallQuality
+            };
+        }
+
+        function displayRouteSurfaceAnalysis(analysis) {
+            // Show the panel
+            document.getElementById('route-surface-analysis').style.display = 'block';
+
+            // Get air quality data
+            const airQuality = getAirQualityIndex();
+
+            // Update summary statistics
+            document.getElementById('avg-hardness').textContent = analysis.avgHardness.toFixed(1) + ' m/s²';
+            document.getElementById('avg-slipperiness').textContent = (analysis.avgSlipperiness * 100).toFixed(0) + '%';
+            document.getElementById('primary-surface').textContent =
+                analysis.primaryMaterial.charAt(0).toUpperCase() + analysis.primaryMaterial.slice(1);
+
+            // Display air quality with color
+            const aqiElement = document.getElementById('air-quality');
+            aqiElement.innerHTML = `<span style="color: ${airQuality.color}; font-weight: 600;">${airQuality.value}</span> - ${airQuality.category}`;
+
+            document.getElementById('overall-quality').textContent = analysis.overallQuality;
+
+            // Display segments
+            let segmentsHtml = '';
+            analysis.segments.forEach((segment, index) => {
+                const qualityClass = `quality-${segment.quality.toLowerCase().replace(' ', '-')}`;
+                segmentsHtml += `
+                    <div class="surface-segment ${qualityClass}">
+                        <div class="surface-segment-header">
+                            Segment ${segment.step} (${segment.distance})
+                        </div>
+                        <div class="surface-detail">
+                            <span>Material:</span>
+                            <span><strong>${segment.material.charAt(0).toUpperCase() + segment.material.slice(1)}</strong></span>
+                        </div>
+                        <div class="surface-detail">
+                            <span>Hardness:</span>
+                            <span>${segment.hardness.toFixed(1)} m/s²</span>
+                        </div>
+                        <div class="surface-detail">
+                            <span>Slipperiness:</span>
+                            <span>${(segment.slipperiness * 100).toFixed(0)}%</span>
+                        </div>
+                        <div class="surface-detail">
+                            <span>Quality:</span>
+                            <span><strong>${segment.quality}</strong></span>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('surface-segments').innerHTML = segmentsHtml;
+        }
+
+        function addRouteMarkers(startLocation, endLocation, startAddress, endAddress) {
+            // Clear existing route markers
+            if (startMarker) startMarker.setMap(null);
+            if (endMarker) endMarker.setMap(null);
+
+            // Create start marker (green)
+            startMarker = new google.maps.Marker({
+                position: startLocation,
+                map: map,
+                label: {
+                    text: 'A',
+                    color: 'white',
+                    fontWeight: 'bold'
+                },
+                title: 'Start: ' + startAddress,
+                icon: {
+                    url: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
+                    scaledSize: new google.maps.Size(40, 40)
+                },
+                animation: google.maps.Animation.DROP
+            });
+
+            // Create end marker (red)
+            endMarker = new google.maps.Marker({
+                position: endLocation,
+                map: map,
+                label: {
+                    text: 'B',
+                    color: 'white',
+                    fontWeight: 'bold'
+                },
+                title: 'End: ' + endAddress,
+                icon: {
+                    url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                    scaledSize: new google.maps.Size(40, 40)
+                },
+                animation: google.maps.Animation.DROP
+            });
+
+            // Add info windows
+            const startInfoWindow = new google.maps.InfoWindow({
+                content: `<div style="padding: 0.5rem;"><strong>Start Point</strong><br>${startAddress}</div>`
+            });
+
+            const endInfoWindow = new google.maps.InfoWindow({
+                content: `<div style="padding: 0.5rem;"><strong>End Point</strong><br>${endAddress}</div>`
+            });
+
+            startMarker.addListener('click', function() {
+                startInfoWindow.open(map, startMarker);
+            });
+
+            endMarker.addListener('click', function() {
+                endInfoWindow.open(map, endMarker);
+            });
+        }
+
+        function calculateDistance(lat1, lng1, lat2, lng2) {
+            const R = 6371e3; // Earth's radius in meters
+            const φ1 = lat1 * Math.PI / 180;
+            const φ2 = lat2 * Math.PI / 180;
+            const Δφ = (lat2 - lat1) * Math.PI / 180;
+            const Δλ = (lng2 - lng1) * Math.PI / 180;
+
+            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                    Math.cos(φ1) * Math.cos(φ2) *
+                    Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            return R * c; // Distance in meters
+        }
+
+        function generateWalkableRoute(start, end) {
+            const latDiff = end.lat() - start.lat();
+            const lngDiff = end.lng() - start.lng();
+            const distance = calculateDistance(start.lat(), start.lng(), end.lat(), end.lng());
+
+            // Create a more realistic walking route with turns
+            const waypoints = [start];
+            const numTurns = Math.min(Math.floor(distance / 200), 8); // Turn every ~200m, max 8 turns
+
+            // Determine if we should go primarily vertical or horizontal first
+            const goVerticalFirst = Math.abs(latDiff) > Math.abs(lngDiff);
+
+            if (numTurns > 0) {
+                // Create intermediate waypoints that simulate street grid
+                for (let i = 1; i <= numTurns; i++) {
+                    const progress = i / (numTurns + 1);
+                    let lat, lng;
+
+                    if (goVerticalFirst) {
+                        if (i % 2 === 1) {
+                            // Odd turns: move primarily in latitude direction
+                            lat = start.lat() + latDiff * progress;
+                            lng = start.lng() + lngDiff * (progress - 0.1 + Math.random() * 0.2);
+                        } else {
+                            // Even turns: move primarily in longitude direction
+                            lat = start.lat() + latDiff * (progress - 0.1 + Math.random() * 0.2);
+                            lng = start.lng() + lngDiff * progress;
+                        }
+                    } else {
+                        if (i % 2 === 1) {
+                            // Odd turns: move primarily in longitude direction
+                            lng = start.lng() + lngDiff * progress;
+                            lat = start.lat() + latDiff * (progress - 0.1 + Math.random() * 0.2);
+                        } else {
+                            // Even turns: move primarily in latitude direction
+                            lng = start.lng() + lngDiff * (progress - 0.1 + Math.random() * 0.2);
+                            lat = start.lat() + latDiff * progress;
+                        }
+                    }
+
+                    waypoints.push({
+                        lat: () => lat,
+                        lng: () => lng
+                    });
+                }
+            }
+
+            waypoints.push(end);
+
+            // Calculate total distance following the route
+            let totalDistance = 0;
+            const segments = [];
+
+            for (let i = 0; i < waypoints.length - 1; i++) {
+                const segmentDist = calculateDistance(
+                    waypoints[i].lat(), waypoints[i].lng(),
+                    waypoints[i + 1].lat(), waypoints[i + 1].lng()
+                );
+                totalDistance += segmentDist;
+
+                segments.push({
+                    distance: {
+                        text: `${(segmentDist / 1000).toFixed(2)} km`,
+                        value: segmentDist
+                    },
+                    instructions: `Segment ${i + 1}: Continue walking`,
+                    end_location: waypoints[i + 1],
+                    start_location: waypoints[i]
+                });
+            }
+
+            return {
+                waypoints: waypoints,
+                segments: segments,
+                totalDistance: totalDistance
+            };
+        }
+
+        function createSimpleRoute(start, end) {
+            const routeData = generateWalkableRoute(start, end);
+
+            return {
+                distance: {
+                    text: `${(routeData.totalDistance / 1000).toFixed(2)} km`,
+                    value: routeData.totalDistance
+                },
+                duration: {
+                    text: `${Math.round(routeData.totalDistance / 83)} min`, // Walking speed ~5 km/h
+                    value: routeData.totalDistance / 1.39 // m/s
+                },
+                start_location: start,
+                end_location: end,
+                steps: routeData.segments.map((seg, i) => ({
+                    distance: seg.distance,
+                    instructions: seg.instructions,
+                    end_location: seg.end_location
+                })),
+                waypoints: routeData.waypoints
+            };
+        }
+
+        let currentRoutePath = null;
+        let routeMarkers = [];
+        let hardnessPolylines = [];
+        let slipperyPolylines = [];
+        let routeLabels = [];
+
+        // Color calculation functions
+        function getHardnessColor(hardness) {
+            // hardness range: 0 (soft) to 40 (hard)
+            // Green -> Yellow -> Orange -> Red
+            const normalized = Math.min(hardness / 40, 1);
+
+            if (normalized < 0.33) {
+                // Green to Yellow
+                const ratio = normalized / 0.33;
+                const r = Math.floor(39 + (241 - 39) * ratio);
+                const g = Math.floor(174 + (196 - 174) * ratio);
+                const b = Math.floor(96 + (15 - 96) * ratio);
+                return `rgb(${r}, ${g}, ${b})`;
+            } else if (normalized < 0.66) {
+                // Yellow to Orange
+                const ratio = (normalized - 0.33) / 0.33;
+                const r = Math.floor(241 + (230 - 241) * ratio);
+                const g = Math.floor(196 + (126 - 196) * ratio);
+                const b = Math.floor(15 + (34 - 15) * ratio);
+                return `rgb(${r}, ${g}, ${b})`;
+            } else {
+                // Orange to Red
+                const ratio = (normalized - 0.66) / 0.34;
+                const r = Math.floor(230 + (231 - 230) * ratio);
+                const g = Math.floor(126 + (76 - 126) * ratio);
+                const b = Math.floor(34 + (60 - 34) * ratio);
+                return `rgb(${r}, ${g}, ${b})`;
+            }
+        }
+
+        function getSlipperyColor(slipperiness) {
+            // slipperiness range: 0 (low) to 1 (high)
+            // Green -> Blue -> Purple -> Red
+
+            if (slipperiness < 0.33) {
+                // Green to Blue
+                const ratio = slipperiness / 0.33;
+                const r = Math.floor(39 + (52 - 39) * ratio);
+                const g = Math.floor(174 + (152 - 174) * ratio);
+                const b = Math.floor(96 + (219 - 96) * ratio);
+                return `rgb(${r}, ${g}, ${b})`;
+            } else if (slipperiness < 0.66) {
+                // Blue to Purple
+                const ratio = (slipperiness - 0.33) / 0.33;
+                const r = Math.floor(52 + (155 - 52) * ratio);
+                const g = Math.floor(152 + (89 - 152) * ratio);
+                const b = Math.floor(219 + (182 - 219) * ratio);
+                return `rgb(${r}, ${g}, ${b})`;
+            } else {
+                // Purple to Red
+                const ratio = (slipperiness - 0.66) / 0.34;
+                const r = Math.floor(155 + (231 - 155) * ratio);
+                const g = Math.floor(89 + (76 - 89) * ratio);
+                const b = Math.floor(182 + (60 - 182) * ratio);
+                return `rgb(${r}, ${g}, ${b})`;
+            }
+        }
+
+        function drawColoredRouteSegments(route, surfaceAnalysis) {
+            // Clear existing colored polylines and labels
+            hardnessPolylines.forEach(poly => poly.setMap(null));
+            slipperyPolylines.forEach(poly => poly.setMap(null));
+            routeLabels.forEach(label => label.setMap(null));
+            hardnessPolylines = [];
+            slipperyPolylines = [];
+            routeLabels = [];
+
+            // Hide default direction renderer line
+            directionsRenderer.setOptions({
+                suppressPolylines: true,
+                suppressMarkers: true
+            });
+
+            // Draw colored segments for each step
+            route.steps.forEach((step, index) => {
+                const segmentData = surfaceAnalysis.segments[index] || getRandomSurfaceData();
+
+                // Get path points for this step
+                const path = step.path || [step.start_location, step.end_location];
+
+                // Calculate offset for parallel lines
+                const offsetDistance = 0.000008; // ~0.8 meters offset for close parallel lines
+
+                // Draw hardness line (top/north offset)
+                const hardnessPath = path.map(point => {
+                    return {
+                        lat: point.lat() + offsetDistance,
+                        lng: point.lng()
+                    };
+                });
+
+                const hardnessPoly = new google.maps.Polyline({
+                    path: hardnessPath,
+                    geodesic: false,
+                    strokeColor: getHardnessColor(segmentData.hardness),
+                    strokeOpacity: 0.9,
+                    strokeWeight: 6,
+                    map: map,
+                    icons: [{
+                        icon: {
+                            path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                            scale: 2,
+                            strokeColor: getHardnessColor(segmentData.hardness),
+                            fillColor: getHardnessColor(segmentData.hardness),
+                            fillOpacity: 1
+                        },
+                        offset: '50%'
+                    }]
+                });
+                hardnessPolylines.push(hardnessPoly);
+
+                // Draw slipperiness line (bottom/south offset)
+                const slipperyPath = path.map(point => {
+                    return {
+                        lat: point.lat() - offsetDistance,
+                        lng: point.lng()
+                    };
+                });
+
+                const slipperyPoly = new google.maps.Polyline({
+                    path: slipperyPath,
+                    geodesic: false,
+                    strokeColor: getSlipperyColor(segmentData.slipperiness),
+                    strokeOpacity: 0.9,
+                    strokeWeight: 6,
+                    map: map,
+                    icons: [{
+                        icon: {
+                            path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                            scale: 2,
+                            strokeColor: getSlipperyColor(segmentData.slipperiness),
+                            fillColor: getSlipperyColor(segmentData.slipperiness),
+                            fillOpacity: 1
+                        },
+                        offset: '50%'
+                    }]
+                });
+                slipperyPolylines.push(slipperyPoly);
+            });
+
+            // Add labels at the start of the route
+            if (route.steps.length > 0) {
+                const firstStep = route.steps[0];
+                const startPoint = firstStep.start_location;
+
+                // Hardness label (left side)
+                const hardnessLabel = new google.maps.Marker({
+                    position: {
+                        lat: startPoint.lat(),
+                        lng: startPoint.lng() - 0.0001
+                    },
+                    map: map,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 0
+                    },
+                    label: {
+                        text: 'Hardness',
+                        color: '#2c3e50',
+                        fontSize: '16px',
+                        fontWeight: 'bold',
+                        className: 'route-label'
+                    },
+                    zIndex: 1000
+                });
+                routeLabels.push(hardnessLabel);
+
+                // Slipperiness label (right side)
+                const slipperyLabel = new google.maps.Marker({
+                    position: {
+                        lat: startPoint.lat(),
+                        lng: startPoint.lng() + 0.0001
+                    },
+                    map: map,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 0
+                    },
+                    label: {
+                        text: 'Slipperiness',
+                        color: '#2c3e50',
+                        fontSize: '16px',
+                        fontWeight: 'bold',
+                        className: 'route-label'
+                    },
+                    zIndex: 1000
+                });
+                routeLabels.push(slipperyLabel);
+            }
+
+            // Show legend
+            document.getElementById('route-legend').style.display = 'block';
+        }
+
+        function planRoute() {
+            if (!isMapReady) {
+                alert('Google Maps not loaded yet. Please wait and try again.');
+                return;
+            }
+
+            if (!startLocation || !endLocation) {
+                alert('Please set both start and end points by clicking on the map.');
+                return;
+            }
+
+            // Clear any existing route
+            if (directionsRenderer) {
+                directionsRenderer.setDirections({ routes: [] });
+            }
+            if (currentRoutePath) {
+                currentRoutePath.setMap(null);
+            }
+            routeMarkers.forEach(marker => marker.setMap(null));
+            hardnessPolylines.forEach(poly => poly.setMap(null));
+            slipperyPolylines.forEach(poly => poly.setMap(null));
+            routeLabels.forEach(label => label.setMap(null));
+            routeMarkers = [];
+            hardnessPolylines = [];
+            slipperyPolylines = [];
+            routeLabels = [];
+
+            // Use Google Directions API for real walking routes
+            const request = {
+                origin: startLocation,
+                destination: endLocation,
+                travelMode: google.maps.TravelMode.WALKING
+            };
+
+            directionsService.route(request, function(result, status) {
+                if (status === 'OK') {
+                    // Display the route on the map
+                    directionsRenderer.setDirections(result);
+
+                    const route = result.routes[0].legs[0];
+
+                    // Analyze surface conditions
+                    const surfaceAnalysis = analyzeRouteSurfaces(route);
+
+                    // Draw colored route segments
+                    drawColoredRouteSegments(route, surfaceAnalysis);
+
+                    // Display route info
+                    document.getElementById('route-info').style.display = 'block';
+                    document.getElementById('distance').textContent = route.distance.text;
+                    document.getElementById('duration').textContent = route.duration.text;
+
+                    // Display turn-by-turn directions
+                    let stepsHtml = '<div style="margin-top: 1rem; font-size: 0.85rem;">';
+                    stepsHtml += '<strong>Walking Directions:</strong><br>';
+                    route.steps.forEach((step, index) => {
+                        const instruction = step.instructions.replace(/<[^>]*>/g, ''); // Remove HTML tags
+                        const segmentData = surfaceAnalysis.segments[index] || getRandomSurfaceData();
+                        const hardnessColor = getHardnessColor(segmentData.hardness);
+                        const slipperyColor = getSlipperyColor(segmentData.slipperiness);
+
+                        stepsHtml += `<div style="margin: 0.5rem 0; padding-left: 1rem; border-left: 4px solid ${hardnessColor}; padding-left: 0.75rem;">`;
+                        stepsHtml += `<strong>${index + 1}.</strong> ${instruction}<br>`;
+                        stepsHtml += `<small style="color: #6c757d;">${step.distance.text} • `;
+                        stepsHtml += `Hardness: <span style="color: ${hardnessColor}; font-weight: 600;">${segmentData.hardness.toFixed(1)} m/s²</span> • `;
+                        stepsHtml += `Slip: <span style="color: ${slipperyColor}; font-weight: 600;">${(segmentData.slipperiness * 100).toFixed(0)}%</span>`;
+                        stepsHtml += `</small></div>`;
+                    });
+                    stepsHtml += '</div>';
+                    document.getElementById('steps-container').innerHTML = stepsHtml;
+
+                    // Display surface analysis
+                    displayRouteSurfaceAnalysis(surfaceAnalysis);
+
+                } else if (status === 'REQUEST_DENIED') {
+                    alert('Directions API Error: API key may not have Directions API enabled.\n\nPlease enable the Directions API in Google Cloud Console:\n1. Go to console.cloud.google.com\n2. Enable "Directions API"\n3. Make sure billing is enabled');
+
+                    // Fallback to simple route visualization
+                    console.error('Directions API request denied. Using fallback route.');
+                    useFallbackRoute();
+                } else {
+                    alert('Could not calculate route: ' + status + '\n\nTry selecting points closer together or in areas with better street coverage.');
+                    console.error('Directions request failed:', status);
+                }
+            });
+        }
+
+        function useFallbackRoute() {
+            // Fallback method when Directions API is not available
+            const route = createSimpleRoute(startLocation, endLocation);
+
+            const pathCoordinates = route.waypoints.map(wp => {
+                return { lat: wp.lat(), lng: wp.lng() };
+            });
+
+            currentRoutePath = new google.maps.Polyline({
+                path: pathCoordinates,
+                geodesic: false,
+                strokeColor: '#e74c3c',
+                strokeOpacity: 0.6,
+                strokeWeight: 4,
+                strokeStyle: 'dashed',
+                map: map
+            });
+
+            document.getElementById('route-info').style.display = 'block';
+            document.getElementById('distance').textContent = route.distance.text;
+            document.getElementById('duration').textContent = route.duration.text;
+
+            let stepsHtml = '<div style="margin-top: 1rem; font-size: 0.85rem;">';
+            stepsHtml += '<div class="alert alert-warning" style="margin-bottom: 1rem; padding: 0.75rem; font-size: 0.85rem;">';
+            stepsHtml += '<strong>⚠️ Limited Route:</strong> Directions API not available. Showing approximate path.';
+            stepsHtml += '</div>';
+            stepsHtml += '</div>';
+            document.getElementById('steps-container').innerHTML = stepsHtml;
+
+            const surfaceAnalysis = analyzeRouteSurfaces(route);
+            displayRouteSurfaceAnalysis(surfaceAnalysis);
+
+            const bounds = new google.maps.LatLngBounds();
+            pathCoordinates.forEach(coord => bounds.extend(coord));
+            map.fitBounds(bounds);
+        }
+
+        // Handle Enter key
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('search-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') searchLocation();
+            });
+
+            document.getElementById('origin').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') document.getElementById('destination').focus();
+            });
+
+            document.getElementById('destination').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') planRoute();
+            });
+        });
+    </script>
+
+    <<script async defer src="https://maps.googleapis.com/maps/api/js?key=__GOOGLE_MAPS_API_KEY__&callback=initMap&libraries=places"></script>
+</body>
+</html>
